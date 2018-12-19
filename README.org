@@ -8,8 +8,8 @@
 Although I have limited time only I started to solve some [[https://adventofcode.com][AOC]] puzzles. This is
 the repository of my CL solutions as far as I get.  
 
-Furthermore I want to try some CL libraries like [[https://common-lisp.net/project/alexandria/][alexandria]], [[https://common-lisp.net/project/iterate/][iterate]],
-[[https://www.cliki.net/SPLIT-SEQUENCE][split-seqeunce]] or [[https://common-lisp.net/project/anaphora/][anaphora]]. I use [[https://www.cliki.net/lisp-unit][lisp-unit]] for testing.
+Furthermore I want to try some CL libraries like [[https://common-lisp.net/project/alexandria/][alexandria]], [[https://common-lisp.net/project/iterate/][iterate]], [[https://github.com/nightfly19/cl-arrows][cl-arrows]],
+[[https://edicl.github.io/cl-ppcre/][cl-ppcre]], [[https://www.cliki.net/SPLIT-SEQUENCE][split-sequence]] or [[https://common-lisp.net/project/anaphora/][anaphora]]. I use [[https://www.cliki.net/lisp-unit][lisp-unit]] for testing.
 
 Clone the repository to a directory and then run the following commands inside
 your REPL to run the first puzzle.

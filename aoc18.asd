@@ -4,10 +4,11 @@
   :author "Martin Buchmann"
   :license "Public Domain"
   :serial t
-  :depends-on (#:lisp-unit #:cl-annot #:iterate #:anaphora #:alexandria #:cl-ppcre)
+  :depends-on (#:lisp-unit #:cl-annot #:iterate #:anaphora #:alexandria #:cl-ppcre #:cl-arrows)
   :components ((:file "package")
                (:file "aux-fns")
                (:file "1")
                (:file "2")
-               (:file "3")))
-
+               (:file "3")
+               (:file "4")
+               (:file "5")))

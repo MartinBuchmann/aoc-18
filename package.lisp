@@ -1,11 +1,11 @@
 ;;;; package.lisp
 
 (defpackage :aoc-18
-  (:use :cl :iterate :lisp-unit)
+  (:use :cl :iterate :lisp-unit :cl-arrows)
   (:import-from :anaphora
    :awhen :it)
   (:import-from :alexandria
-   :curry)
+   :curry :read-file-into-string)
   (:import-from :cl-ppcre
    :split))
 
