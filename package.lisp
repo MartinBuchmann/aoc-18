@@ -7,5 +7,5 @@
   (:import-from :alexandria
    :curry :read-file-into-string)
   (:import-from :cl-ppcre
-   :split))
+   :split :register-groups-bind))
 
