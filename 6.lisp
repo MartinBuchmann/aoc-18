@@ -1,6 +1,9 @@
 (in-package :aoc-18)
+(annot:enable-annot-syntax)
 
 (defun read-input6 (&optional (input #p "inputs/input6.txt"))
+  "Returns the Number of given coordinates, the bounding box of the area and the
+list of coordinates."
   (iter
     (with max-x = 0) (with max-y = 0)
     (for line in-file input using #'read-line)
@@ -12,48 +15,81 @@
     (collect (list x y) into coordinates)
     (finally (return (values max-x max-y coordinates)))))
 
-;;; Vielleicht gar nicht notwendig
-(defun initialize-area (max-x max-y coordinates)
-  (iter
-    (with area = (make-array (list (1+ max-x) (1+ max-y))
-                             :element-type 'unsigned-byte :initial-element 0))
-    (for (x y) in coordinates)
-    (for i from 1)
-    (setf (aref area x y) i)
-    (log:info "I: ~D X: ~D Y: ~D" i x y)
-    (finally (return area))))
-
-;;; TODO: Manhattan-Distanz berechen, Iterate statt loop verwenden
 (defun minimum-manhattan-distance (x y coordinates)
-  (loop :for c :in coordinates
-	:for i :from 0
-	:for dx := (abs (- (first c) x))
-	:for dy := (abs (- (second c) y))
-	:collect (list i (+ dx dy)) :into results
-	:finally (return
-		   (let ((sorted (sort (copy-seq results) #'< :key #'second)))
-		     (if (= (cadar sorted) (cadadr sorted))
-			 nil
-			 (caar sorted))))))
+  "Returns the coordinate which has the lowest manhatten distance from X Y or
+NIL if two coordinates lead to a minimum."
+  (iter
+    (with min-d = most-positive-fixnum)
+    (with min-i = nil)
+    (for c in coordinates)
+    (for i from 0)
+    (for dx = (abs (- (first c)  x)))
+    (for dy = (abs (- (second c) y)))
+    (cond ((< #1=(+ dx dy) min-d) (setf min-d #1# min-i i))
+          ((= #1# min-d) (setf min-i nil)))
+    (finally (return min-i))))
 
-;;; TODO: Unendliche Bereiche identifizieren
-(defun detect-infinites (coordinates)
-  "Return a hash-table with coordinates' cardinals for areas that extend infinitely."
-  (flet ((mark-inf (x y coordinates ht)
-	   (let ((id (minimum-manhattan-distance x y coordinates)))
-	     (unless (or (null id) (gethash id ht))
-	       (setf (gethash id ht) t)))))
-    (let ((infinites (make-hash-table)))
-      (destructuring-bind (max-x max-y) (max-dimensions coordinates)
-	(loop :for x :in (list 0 max-x)
-	      :do (loop :for y :from 0 :upto max-y
-			:do (mark-inf x y coordinates infinites)))
-	(loop :for y :in (list 0 max-y)
-	      :do (loop :for x :from 1 :upto (1- max-x)
-			:do (mark-inf x y coordinates infinites))))
-      infinites)))
+;;; For Debugging only
+(defun print-area ()
+  (multiple-value-bind (max-x max-y coordinates)
+      (read-input6 "tests/test-06.txt")
+    (iter (for x from 0 to max-x)
+          (iter (for y from 0 to max-y)
+                (aif (minimum-manhattan-distance y x coordinates)
+                     (princ it)
+                     (princ #\.)))
+          (terpri))))
 
-;;; TODO: Hauptroutine implementieren
+;;; The coordinates which have a minimum distance on the outer bound will extend
+;;; towards infinity.
+(defun detect-infinites (max-x max-y coordinates &aux (infinites (make-hash-table)))
+  "Return a hash-table with coordinates that have an infinit area."
+  (flet ((mark-inf (x y coordinates ht &aux (id (minimum-manhattan-distance x y coordinates)))
+	   (unless (or (null id) (gethash id ht))
+	     (setf (gethash id ht) t))))
+    (iter (for x in (list 0 max-x))
+	  (iter (for y from 0 to max-y)
+		(mark-inf x y coordinates infinites)))
+    (iter (for y in (list 0 max-y))
+	  (iter (for x from 1 to (1- max-x))
+		(mark-inf x y coordinates infinites)))
+    infinites))
+
+(defun area-sizes (max-x max-y coordinates
+                   &aux (num-of-coor (length coordinates))
+                     (infinites (detect-infinites max-x max-y coordinates))
+                     (result (make-array num-of-coor :element-type 'fixnum
+                                                     :initial-element 0)))
+  "Returns an array with the area size of the coordinates or 0 if the area is
+infinit."
+  (iter (for x from 0 to max-x)
+        (iter (for y from 0 to max-y)
+              (for id = (minimum-manhattan-distance x y coordinates))
+              (unless (or (null id) (gethash id infinites))
+                (incf (aref result id)))))
+   result)
+
+(defun aoc18-06a (&optional (input #p"inputs/input6.txt"))
+  (multiple-value-bind (max-x max-y coordinates)
+      (read-input6 input)
+    (iter (for area in-vector (area-sizes max-x max-y coordinates))
+          (maximize area))))
+
+;;; Valid only for my input
+(define-test test-06
+  (assert-equal 357 (nth-value 0 (read-input6)))
+  (assert-equal 356 (nth-value 1 (read-input6)))
+  (assert-equal 17 (aoc18-06a "tests/test-06.txt")))
+
 (multiple-value-bind (max-x max-y coordinates)
-    (read-input6)
-  (initialize-area max-x max-y coordinates))
+    (read-input6 "tests/test-06.txt")
+  @ignore max-x max-y
+  (minimum-manhattan-distance 0 0 coordinates))
+
+(multiple-value-bind (max-x max-y coordinates)
+    (read-input6 "tests/test-06.txt")
+  (detect-infinites max-x max-y coordinates))
+
+(multiple-value-bind (max-x max-y coordinates)
+    (read-input6 "tests/test-06.txt")
+  (area-sizes max-x max-y coordinates))
