@@ -75,11 +75,49 @@ infinit."
     (iter (for area in-vector (area-sizes max-x max-y coordinates))
           (maximize area))))
 
+;;; Part 2
+
+(defun manhattan-distance-to-all-coordinates (x y coordinates)
+  "Returns the sum of all manhattan distances for X,Y."
+  (iter
+    (for c in coordinates)
+    (for dx = (abs (- (first c) x)))
+    (for dy = (abs (- (second c) y)))
+    (sum (+ dx dy))))
+
+;; (defun within-region-p (x y coordinates &optional (limit 10000))
+;;   (< (manhattan-distance-to-all-coordinates x y coordinates) limit))
+
+(defun region-size (max-x max-y coordinates &optional (limit 10000))
+  "Returns the size of the region with a sum of manhattan distances below
+LIMIT."
+  (iter
+    (for x to max-x)
+    (sum (iter
+           (for y to max-y)
+	   (count
+            (< (manhattan-distance-to-all-coordinates x y coordinates) limit))))))
+
+(defun aoc18-06b (&optional (input #p"inputs/input6.txt"))
+  (multiple-value-bind (max-x max-y coordinates)
+      (read-input6 input)
+    (region-size max-x max-y coordinates 10000)))
+
+;; (defun answer-2 (&optional (file "day06-input.txt") (limit 10000))
+;;   (region-size (input file) limit))
+
 ;;; Valid only for my input
 (define-test test-06
   (assert-equal 357 (nth-value 0 (read-input6)))
   (assert-equal 356 (nth-value 1 (read-input6)))
-  (assert-equal 17 (aoc18-06a "tests/test-06.txt")))
+  (assert-equal 17 (aoc18-06a "tests/test-06.txt"))
+  (assert-equal 30 (multiple-value-bind (max-x max-y coordinates)
+                       (read-input6 "tests/test-06.txt")
+                     @ignore max-x max-y
+                     (manhattan-distance-to-all-coordinates 4 3 coordinates)))
+  (assert-equal 16 (multiple-value-bind (max-x max-y coordinates)
+                       (read-input6 "tests/test-06.txt")
+                     (region-size max-x max-y coordinates 32))))
 
 (multiple-value-bind (max-x max-y coordinates)
     (read-input6 "tests/test-06.txt")
