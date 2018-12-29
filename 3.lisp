@@ -51,12 +51,6 @@
        (dy (parse-integer (subseq input (1+ pos-x)))))
     (values id x1 y1 (+ x1 dx) (+ y1 dy))))
 
-(defun invalidate-field (id )
-  "Sets all fields of FABRIC with ID to 'X."
-  (iter
-    (for i :from 0 below (array-total-size fabric))
-    (when (= id #1=(row-major-aref fabric i)) (setf #1# 'X))))
-
 (defun invalidate-ids (id1 id2 ids fabric x y)
   "Sets all fields of FABRIC with ID to 'X."
   (setf (aref fabric x y) 'X)
