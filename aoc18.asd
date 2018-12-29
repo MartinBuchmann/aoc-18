@@ -5,7 +5,7 @@
   :license "Public Domain"
   :serial t
   :depends-on (#:lisp-unit #:cl-annot #:iterate #:anaphora #:alexandria #:cl-ppcre #:cl-arrows #:log4cl
-               #:cl-digraph)
+               #:cl-digraph #:cl-digraph.dot)
   :components ((:file "package")
                (:file "aux-fns")
                (:file "1")
