@@ -12,6 +12,9 @@
 (defparameter *test-input-8*
   '(2 3 0 3 10 11 12 1 1 0 1 99 2 1 1 2))
 
+(defparameter *test-input-8.1*
+  '(2 4 1 3 0 1 8 10 11 12 2 1 0 1 99 0 1 7 2 1 1 2 4))
+
 ;;; ** Reading the input data
 (defun read-input8 (&optional (input #p"inputs/input8.txt"))
   "Reads the input for AOC-18 day 8 and returns it as a list of integers."
@@ -39,8 +42,8 @@
                 (list nil input-without-header)
                 (iter (repeat child-count) ; For each child remove the data
                   (for (values new-child remaining-input)
-                       first (build-tree input-without-header)
-                       then (build-tree remaining-input))
+                       first (parse-license input-without-header)
+                       then (parse-license remaining-input))
                   (collecting new-child into children)
                   (finally (return (list children remaining-input)))))
           (destructuring-bind (data input-without-node) ; Store the data in the node
@@ -64,6 +67,12 @@
 ;;;
 ;;; Unfortunately, it works fine only for the test but not for the
 ;;; real data...
+
+;;; ... because I missed the most important point to handle the
+;;; children correctly! I tried to add this but the iteration gets so
+;;; complex that I do not like the code any more. The version above
+;;; works so elegantly that I will stick with it but leave my
+;;; erroneous approach for later study.
 (defun find-metadata% (input)
   "Returns a list containing the meta data, only."
   (iter
@@ -80,10 +89,33 @@
          then (if (zerop number-of-children)
                   (subseq remaining-input data-end)
                   (subseq remaining-input 2 data-start)))
+    ;; (when (not (zerop number-of-children))
+    ;;   (find-metadata% remaining-input)) ; This is not sufficient!
+    ;; The cutting of the data of each child should be implemented
+    ;; without recursion.
     (dbg :08-fm "n: ~D d-c; ~2D S: ~5D E: ~5D len: ~5D D: ~A~%"
          number-of-children data-count data-start data-end len data)
     (appending data)
     (while remaining-input)))
+
+(defun find-metadata%% (input)
+  (if (null input)
+      (values nil nil)
+      (destructuring-bind ((child-count data-count) input-wo-header)
+          (split-at 2 input)
+        (destructuring-bind (children input-wo-children)
+            (if (zerop child-count)
+                (list nil input-wo-header)
+                (iter (repeat child-count)
+                  (for (values new-child remaining-input)
+                       first (find-metadata%% input-wo-header)
+                       then (find-metadata%% remaining-input))
+                  (collecting new-child into children)
+                  (finally (return (list children remaining-input)))))
+          (destructuring-bind (data input-wo-node)
+              (split-at data-count input-wo-children)
+            (dbg :08-fm%% "D: ~D wo-node: ~A~%" data input-wo-node)
+            (values (make-node :data data :children children) input-wo-node))))))
 
 ;;; * Part 1
 
@@ -121,6 +153,6 @@ description."
       (root-node-value)))
 
 (define-test test-08
-  (assert-equal 138 (reduce #'+ (find-metadata% *test-input*)))
-  (assert-equal 138 (sum-metadata (parse-license *test-input*)))
+  (assert-equal 138 (reduce #'+ (find-metadata% *test-input-8*)))
+  (assert-equal 138 (sum-metadata (parse-license *test-input-8*)))
   (assert-equal 66 (root-node-value (parse-license *test-input-8*))))
