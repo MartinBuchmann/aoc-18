@@ -19,12 +19,6 @@
   "Returns a new track object defined by SEGMENTS, CARTS and WRECKS."
   (make-instance 'track :segments segments :carts carts :wrecks wrecks))
 
-;; (defstruct (track
-;;             (:constructor make-track (segments carts &optional wrecks)))
-;;   segments
-;;   carts
-;;   (wrecks nil))
-
 ;; *** The hierachy of track segments
 (defclass track-segment () ())
 
@@ -42,7 +36,7 @@
 
 (defclass track-intersection (track-segment) ())
 
-;; ** The methods to return a specific character per track segment
+;;; ** The methods to return a specific character per track segment
 (defgeneric segment-char (segment)
   (:documentation "The different types of segments."))
 (defmethod segment-char ((segment null))                     #\ )
@@ -57,12 +51,10 @@
 (defmethod segment-char ((segment top-right-curve))          #.(code-char #x255A))
 (defmethod segment-char ((segment track-intersection))       #.(code-char #x256C))
 
-
-;; ** The cart object
-;;
-;; I am using a circular list for the next-turn to implement the
-;; repetion of left, straight and right.
-
+;;; ** The cart object
+;;;
+;;; I am using a circular list for the next-turn to implement the
+;;; repetion of left, straight and right.
 (defclass cart ()
   ((position :initarg :position :accessor cart-pos)
    (direction :initarg :direction :accessor direction)
@@ -76,7 +68,7 @@
   (make-instance 'cart :position position :direction direction
                        :next-turn (or next-turn (clist:make-circular-list '((0 . -1) (1 . 0) (0 . 1))))))
 
-;; *** Printing a cart.
+;;; *** Printing a cart.
 (defmethod print-object ((cart cart) stream)
   (with-slots (position) cart
     (format stream "#<CART ~A ~A >" position (cart-char cart))))
@@ -90,9 +82,9 @@
           (and (= (rest position-1) (rest position-2))
                (< (first position-1) (first position-2)))))))
 
-;; I didn't know about sharpsign dot before :-)
-;; http://www.lispworks.com/documentation/HyperSpec/Body/02_dhf.htm
-;; The characters for the carts are black triangles 
+;;; I didn't know about sharpsign dot before :-)
+;;; http://www.lispworks.com/documentation/HyperSpec/Body/02_dhf.htm
+;;; The characters for the carts are black triangles 
 (defun cart-char (cart &aux (dir (direction cart)))
   "Returns a character for the cart depending on its direction."
   (cond ((equal dir '( 0 .  1)) #.(code-char #x25BC))
@@ -101,7 +93,7 @@
         ((equal dir '(-1 .  0)) #.(code-char #x25C0))
         (t (error "Wrong direction for cart: ~a" cart))))
 
-;; *** The methods for moving the cart
+;;; *** The methods for moving the cart
 (defgeneric move-cart (cart next-track-segment)
   (:documentation "Moving the cart. Will return a new cart object with the updated position."))
 
@@ -162,7 +154,6 @@
     (#\V '( 0 .  1))
     (#\^ '( 0 . -1))
     (otherwise nil)))
-
 
 (defun track-curve-type (general-shape coordinates segments)
   "Determine the curve type for a given segment."
@@ -254,7 +245,7 @@
                                track-segments
                                (sort carts #'cart<)))))))
 
-;; ** Printing a track
+;;; ** Printing a track
 (defun print-track (track)
   "Printing a given TRACK."
   (with-slots (segments wrecks) track
@@ -279,8 +270,7 @@
                    carts)))
       (print-rows 0 (carts track)))))
 
-;; * The test data
-;;
+;;; * The test data
 (defparameter *test-track-1*
   (parse-track '("|"
                  "v"
@@ -310,7 +300,7 @@
                  "  \\<->/"))
   "Another complex track.")
 
-;; * The given data
+;;; * The given data
 (defun read-track (&optional (input #p"inputs/input13.txt"))
   "Returns the given track as a list of strings."
   (iter (for line in-file input using #'read-line)
@@ -319,7 +309,7 @@
 
 (defparameter *track* (parse-track (read-track)))
 
-;; * Stepping through the track
+;;; * Stepping through the track
 (defun step-time (track)
   "Returns the updated track one step after TRACK."
   (let ((wrecks (wrecks track)))
@@ -348,7 +338,7 @@
       (let ((new-carts (move-carts (carts track) nil)))
         (make-track (segments track) new-carts wrecks)))))
 
-;; * Part 1
+;;; * Part 1
 (defun run-until-crash (track &optional (iterations 0))
   "Runs TRACK until the first crash."
   (if (not (endp (wrecks track)))
@@ -363,7 +353,7 @@
   "Returns the answer for the first part of day 13."
   (first-crash-location *track*))
 
-;; * Part 2
+;;; * Part 2
 (defun run-until-one-cart (track &optional (iterations 0))
   "Returns the track with only one cart left."
   (if (endp (cdr (carts track)))
@@ -378,7 +368,7 @@
   "Returns the answer for the second part of day 13."
   (last-cart-location *track*))
 
-;; * Tests
+;;; * Tests
 (define-test test-13
   (assert-equal '(7 . 3) (first-crash-location *test-track-2*))
   (assert-equal '(6 . 4) (last-cart-location *test-track-3*)))
