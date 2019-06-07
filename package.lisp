@@ -1,3 +1,5 @@
+(in-package :cl)
+
 ;;;; package.lisp
 
 (defpackage :circular-list
@@ -6,10 +8,8 @@
    :iterate)
   (:shadow :equal)
   (:export :make-circular-list
-   :equal
-           :focused
-   :insert
-           :rotate
+   :equal :focused
+   :insert :rotate
    :remove-focused))
 
 (defpackage :aoc-18

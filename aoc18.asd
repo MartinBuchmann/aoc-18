@@ -1,6 +1,6 @@
 ;;;; project-euler.asd
 (asdf:defsystem #:aoc18
-  :description "My solutions to some Advent of Code puzzles."
+  :description "My solutions to some Advent of Code 2018 puzzles."
   :author "Martin Buchmann"
   :license "Public Domain"
   :serial t

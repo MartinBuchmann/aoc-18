@@ -1,35 +1,35 @@
-;; -*- ispell-local-dictionary: "en" -*-
-;; * Day 12
-;; The package
+;;; -*- ispell-local-dictionary: "en" -*-
+;;; * Day 12
+;;; The package
 (in-package :aoc-18)
 (annot:enable-annot-syntax)
 
-;; I knew that a simple cellular automaton would yield most likely to
-;; the solution. After studying Phil! Gold's solution I copied his
-;; great idea using bit-vectors for that tasks.
+;;; I knew that a simple cellular automaton would yield most likely to
+;;; the solution. After studying Phil! Gold's solution I copied his
+;;; great idea using bit-vectors for that tasks.
 
-;; * Some basic parameters
+;;; * Some basic parameters
 
-;; The initial state string starts with an offset for the prefix
-;; "initial state: "
+;;; The initial state string starts with an offset for the prefix
+;;; "initial state: "
 (defparameter *state-prefix-length* 15)
 
-;; The encoding of plants and empty pots
+;;; The encoding of plants and empty pots
 (defparameter *plant* #\#)
 (defparameter *empty* #\.)
 
-;; * A structure for the state
+;;; * A structure for the state
 ;;
-;; Because the plants can and will spread across the left and right
-;; border of the initial state I will keep an offset for the extra
-;; space.
+;;; Because the plants can and will spread across the left and right
+;;; border of the initial state I will keep an offset for the extra
+;;; space.
 (defstruct state
   (offset 0)
   pots)
 
-;; * Handling the input
+;;; * Handling the input
 
-;; ** Convert the state-string to a bit-vector
+;;; ** Convert the state-string to a bit-vector
 (defun parse-state-string (state)
   "Parses the STATE string and returns a bit vector where each cell
 with a plant is represented by 1."
@@ -41,7 +41,7 @@ with a plant is represented by 1."
           (setf (sbit bit-vector i) 1))
         (finally (return bit-vector))))
 
-;; ** Reading the initial state                               
+;;; ** Reading the initial state                               
 (defun parse-initial-state (initial-state-string)
   "Return a STATE structure for the INITIAL-STATE-STRING."
   (let* ((bit-string (subseq initial-state-string *state-prefix-length*))
@@ -57,7 +57,7 @@ with a plant is represented by 1."
                     (make-list (max 0 (- last-plant (length bit-string) -5))
                                :initial-element *empty*))))))
 
-;; ** Converting the pattern to an integer value
+;;; ** Converting the pattern to an integer value
 (defun pattern-to-int (pattern)
   "Converts the given PATTERN of the rule to an integer value."
   (if (zerop (length pattern))
@@ -69,12 +69,12 @@ with a plant is represented by 1."
              1
              0))))
 
-;; ** Reading the rules
+;;; ** Reading the rules
 ;;
-;; Rules are 5 character string where each character can take two
-;; state: plant or empty. This leads to 2^5 = 32 possible rules. A
-;; 32bit vector can thus hold all rules. The value of the bit gives
-;; the information if a plant will grow in the next generation or not. 
+;;; Rules are 5 character string where each character can take two
+;;; state: plant or empty. This leads to 2^5 = 32 possible rules. A
+;;; 32bit vector can thus hold all rules. The value of the bit gives
+;;; the information if a plant will grow in the next generation or not. 
 (defun parse-rules (rule-string-list)
   "Returns an 32bit vector for all possible rules."
   (iter (with result = (make-array (expt 2 5) :element-type 'bit :initial-element 0))
@@ -84,10 +84,10 @@ with a plant is represented by 1."
           (setf (sbit result (pattern-to-int pattern-string)) 1))
         (finally (return result))))
 
-;; ** Reading the data
+;;; ** Reading the data
 ;;
-;; I found the use of destructing-bind very simple even though it is
-;; not very elegant.
+;;; I found the use of destructing-bind very simple even though it is
+;;; not very elegant.
 (defun read-input12 (&optional (input #p"inputs/input12.txt"))
   "Reads the input for AOC-18 day 10 and returns it as a list of LIGHTS."
   (destructuring-bind (initial-states empty &rest rules)
@@ -97,7 +97,7 @@ with a plant is represented by 1."
     @ignore empty
     (list initial-states rules)))
 
-;; ** Storing the data
+;;; ** Storing the data
 (defvar *test-input* (read-input12 "tests/tests-12.txt"))
 (defvar *test-state* (parse-initial-state (nth 0 *test-input*)))
 (defvar *test-rules* (parse-rules (nth 1 *test-input*)))
@@ -106,7 +106,7 @@ with a plant is represented by 1."
 (defvar *state* (parse-initial-state (nth 0 *input*)))
 (defvar *rules* (parse-rules (nth 1 *input*)))
 
-;; * The spreading of the plants
+;;; * The spreading of the plants
 (defun spread-plants-once (state rules)
   "Returns a new-state after applyint RULES to the given STATE."
   (with-slots ((current-offset offset) (current-pots pots)) state
@@ -126,7 +126,7 @@ with a plant is represented by 1."
                     1)))
       (make-state :offset new-offset :pots new-pots))))
 
-;; * Spreading the plants for generations
+;;; * Spreading the plants for generations
 (defun spread-plants (initial-state rules generations)
   "Return the state after GENERATTIONS for RULES and the INITIAL-STATE."
   (iter (for generation from 1 to generations)
@@ -142,18 +142,18 @@ with a plant is represented by 1."
                   :pots (state-pots new-state))))
         (finally (return new-state))))
 
-;; * Adding the plant numbers
+;;; * Adding the plant numbers
 (defun add-plant-numbers (state)
   (with-slots (offset pots) state
     (iter (for p in-vector pots with-index i)
           (when (= p 1)
             (summing (+ i offset))))))
 
-;; * Part 1
+;;; * Part 1
 (defun aoc-12a ()
   (add-plant-numbers (spread-plants *state* *rules* 20)))
 
-;; * Part 2
+;;; * Part 2
 (defun aoc-12b ()
   (add-plant-numbers (spread-plants *state* *rules* 50000000000)))
 
