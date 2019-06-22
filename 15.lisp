@@ -4,79 +4,7 @@
 (in-package :aoc-18)
 (annot:enable-annot-syntax)
 
-;;; * Helper functions
-(defun cref (array complex-number)
-  "Returns the value of the 2d ARRAY at the position given as a COMPLEX NUMBER."
-  (aref array (imagpart complex-number) (realpart complex-number)))
-
-(defun (setf cref) (new-value array complex-number)
-  "Sets the value of the 2d ARRAY at the position given as a COMPLEX NUMBER to NEW-VALUE."
-  (setf (aref array (imagpart complex-number) (realpart complex-number)) new-value))
-
-;;; ** Shortest Path
-;;; Taken from Phil! Gold. I do not understand it completely.
-
-(defun find-shortest-path (finishedp next-options visited options test)
-  (if (zerop (cl-containers:size options))
-      (values nil nil)
-      (destructuring-bind (cost from-node to-node) (cl-containers:delete-first options)
-        (if (gethash to-node visited)
-            (find-shortest-path finishedp next-options visited options test)
-            (progn
-              (setf (gethash to-node visited) (cons to-node (gethash from-node visited)))
-              (if (funcall finishedp to-node)
-                  (values (reverse (gethash to-node visited))
-                          cost)
-                  (let ((next-edges (remove-if (lambda (edge) (gethash (second edge) visited))
-                                               (funcall next-options to-node))))
-                    (iter (for (next-cost next-node) in next-edges)
-                          (cl-containers:insert-item options
-                                                     (list (+ cost next-cost)
-                                                           to-node
-                                                           next-node)))
-                    (find-shortest-path finishedp next-options visited options test))))))))
-
-(defun shortest-path (start next-options &key end finishedp (test 'eql) heuristic)
-  "Finds the shortest path from START to END.  NEXT-OPTIONS should be a
-  function that accepts a state and returns a list of `(cost state)` pairs
-  signifying next moves from the given state.  Returns two values: a list
-  of states from START to END, and the total cost of the path.  TEST
-  determines how the states are compared and should be usable as a hash
-  table test.  The optional HEURISTIC is a function that is called with a
-  state and returns an estimate of the minimum cost from that state to
-  END.
-
-  In place of END, you can give FINISHEDP, which is a function that will
-  be called on each state.  It should return true if the state is the end
-  of the path and false otherwise."
-  (when (and (not end)
-             (not finishedp))
-    (error "Must give either END or FINISHEDP."))
-  (when (and end finishedp)
-    (error "Cannot give both END and FINISHEDP."))
-  (let ((real-finishedp (or finishedp
-                            (lambda (state) (funcall test state end)))))
-    (if (funcall real-finishedp start)
-        (values (list start) 0)
-        (let ((visited (make-hash-table :test test))
-              (options (make-instance 'cl-containers:priority-queue-on-container
-                                      :key (if heuristic
-                                               (lambda (edge)
-                                                 (destructuring-bind (cost from-node to-node) edge
-                                                   (declare (ignore from-node))
-                                                   (+ cost (funcall heuristic to-node))))
-                                               #'first)
-                                      :test (lambda (a b)
-                                              (and (= (first a) (first b))
-                                                   (funcall test (second a) (second b))
-                                                   (funcall test (third a) (third b))))
-                                      :sorter #'<)))
-          (iter (for (cost node) in (funcall next-options start))
-                (cl-containers:insert-item options (list cost start node)))
-          (setf (gethash start visited) (list start))
-          (find-shortest-path real-finishedp next-options visited options test)))))
-
-;;; * The data structures for the battle
+;; * The data structures for the battle
 
 (defparameter *elf-power* 3 "The power of an elf attack.")
 (defparameter *neighbors* '(#C(0 -1) #C(-1 0) #C(1 0) #C(0 1)))
@@ -175,7 +103,7 @@
 (define-condition one-team-eliminated ()
   () (:documentation "Raise a condition if one team is completely eliminated."))
 
-;;; * The test input
+;; * The test input
 
 (defparameter *test-basic-layout*
   '("#######"
@@ -265,7 +193,7 @@
     "#.....G.#"
     "#########"))
 
-;;; * My input
+;; * My input
 
 (defun read-battle (&optional (input #p"inputs/input15.txt"))
   "Returns the given battle as a list of strings."
@@ -273,7 +201,137 @@
         (when line
           (collect line))))
 
-;;; * Part 1
+;; * Visualisation
+;;
+;; I couldn't stand the temptations to use some visualisation for the battle.  I
+;; wanted to play with cl-cairo2 to draw the maps of each round of the battle as
+;; a png file.  As I copied a lot of code from Phil I used also the dufy library
+;; for defining the colours.
+
+;; ** Parameters for visualisation
+
+(defparameter *visualize* nil "Only output the visualisation if set to T. Use
+with care as a lot of files will be created.")q
+(defparameter *square-side* 32 "The size of a square of the map in pixel.")
+
+;; ** The colors (taken from Phil)
+
+(defparameter *color-base03* (multiple-value-list (dufy:lab-to-xyz 15 -12 -12)))
+(defparameter *color-base02* (multiple-value-list (dufy:lab-to-xyz 20 -12 -12)))
+(defparameter *color-base01* (multiple-value-list (dufy:lab-to-xyz 45 -07 -07)))
+(defparameter *color-base00* (multiple-value-list (dufy:lab-to-xyz 50 -07 -07)))
+(defparameter *color-base0*  (multiple-value-list (dufy:lab-to-xyz 60 -06 -03)))
+(defparameter *color-base1*  (multiple-value-list (dufy:lab-to-xyz 65 -05 -02)))
+(defparameter *color-base2*  (multiple-value-list (dufy:lab-to-xyz 92 -00  10)))
+(defparameter *color-base3*  (multiple-value-list (dufy:lab-to-xyz 97  00  10)))
+(defparameter *color-dark-background* *color-base03*)
+(defparameter *color-dark-highlight*  *color-base02*)
+(defparameter *color-dark-secondary*  *color-base01*)
+(defparameter *color-dark-primary*    *color-base0*)
+(defparameter *color-dark-emphasized* *color-base1*)
+(defparameter *color-light-background* *color-base3*)
+(defparameter *color-light-highlight*  *color-base2*)
+(defparameter *color-light-secondary*  *color-base1*)
+(defparameter *color-light-primary*    *color-base00*)
+(defparameter *color-light-emphasized* *color-base01*)
+
+(defparameter *color-yellow*  (multiple-value-list (dufy:lab-to-xyz 60  10  65)))
+(defparameter *color-orange*  (multiple-value-list (dufy:lab-to-xyz 50  50  55)))
+(defparameter *color-red*     (multiple-value-list (dufy:lab-to-xyz 50  64  45)))
+(defparameter *color-magenta* (multiple-value-list (dufy:lab-to-xyz 50  65 -05)))
+(defparameter *color-violet*  (multiple-value-list (dufy:lab-to-xyz 50  15 -45)))
+(defparameter *color-blue*    (multiple-value-list (dufy:lab-to-xyz 55 -10 -45)))
+(defparameter *color-cyan*    (multiple-value-list (dufy:lab-to-xyz 60 -35 -05)))
+(defparameter *color-green*   (multiple-value-list (dufy:lab-to-xyz 60 -20  65)))
+
+(defun color (keyword)
+  (symbol-value (find-symbol (format nil "*COLOR-~A*" keyword))))
+
+(defun set-color (keyword)
+  (multiple-value-call #'cairo:set-source-rgb (apply #'dufy:xyz-to-rgb (color keyword))))
+
+;; ** A macro to generate a png file for each state
+(defmacro with-png-for-battle ((battle filename) &body body)
+  "Executes BODY to puts its result for BATTLE in the png given by FILENAME."
+  (let ((map (gensym "MAP")))
+    `(if *visualize*
+         (with-slots ((,map map)) ,battle
+           (cairo:with-png-file (,filename
+                                 :rgb24
+                                 (* *square-side* (array-dimension ,map 1))
+                                 (* *square-side* (array-dimension ,map 0)))
+             (cairo:translate (/ *square-side* 2) (/ *square-side* 2))
+             (cairo:scale *square-side* *square-side*)
+             ,@body))
+         (progn
+           ,@body))))
+
+;; ** The drawing functions
+
+(defun draw-walls (battle)
+  "Draws the walls of BATTLE's map."
+  (when *visualize*
+    (with-slots (map) battle
+      (set-color :dark-highlight)
+      (cairo:paint)
+      (iter (for y from 0 below (array-dimension map 0))
+            (iter (for x from 0 below (array-dimension map 1))
+                  (for entity = (aref map y x))
+                  (for x-base = (* x *square-side*))
+                  (for y-base = (* y *square-side*))
+                  (when (typep entity 'wall)
+                    (set-color :dark-background)
+                    (cairo:rectangle (- x 0.5) (- y 0.5) 1 1)
+                    (cairo:fill-path)))))))
+
+(defun draw-actors (battle)
+  "Draws the actors of the BATTLE. Goblins are violet diamonds, elves are green
+squares. The hit points are drawn as a small red/white indicator above the
+symbol."
+  (when *visualize*
+    (with-slots (actors) battle
+      (iter (for actor in actors)
+            (when (not (plusp (actor-hp actor)))
+              (next-iteration))
+            (for x = (realpart (entity-position actor)))
+            (for y = (imagpart (entity-position actor)))
+            (ecase (actor-team actor)
+              (:goblin
+               (set-color :violet)
+               (cairo:move-to (- x (* 0.25 (sqrt 2))) y)
+               (cairo:line-to x (+ y (* 0.25 (sqrt 2))))
+               (cairo:line-to (+ x (* 0.25 (sqrt 2))) y)
+               (cairo:line-to x (- y (* 0.25 (sqrt 2))))
+               (cairo:close-path)
+               (cairo:fill-path))
+              (:elf
+               (set-color :green)
+               (cairo:rectangle (- x 0.25) (- y 0.25) 0.5 0.5)
+               (cairo:fill-path)))
+            (set-color :light-background)
+            (cairo:rectangle (- x 1/4) (- y 15/32) 1/2 2/32)
+            (cairo:fill-path)
+            (set-color :red)
+            (cairo:rectangle (- x 1/4) (- y 15/32) (* 1/2 (/ (actor-hp actor) 200)) 2/32)
+            (cairo:fill-path)))))
+
+(defun draw-line (start end color width)
+  (when *visualize*
+    (cairo:set-line-width (/ width *square-side*))
+    (set-color color)
+    (cairo:move-to (realpart start) (imagpart start))
+    (cairo:line-to (realpart end) (imagpart end))
+    (cairo:stroke)))
+
+(defun draw-cell (position color)
+  (when *visualize*
+    (set-color color)
+    (cairo:rectangle (- (realpart position) 0.5)
+                     (- (imagpart position) 0.5)
+                     1 1)
+    (cairo:fill-path)))
+
+;; * Part 1
 
 (defun living-actors (battle)
   "Returns living and dead actors as its second value."
@@ -319,6 +377,8 @@
   (with-slots (position team) actor
     (let ((positions-visited (make-hash-table)))
       (labels ((search-distance (candidates)
+                 (iter (for candidate in candidates)
+                       (draw-cell candidate :dark-secondary))
                  (cond
                    ((endp candidates) nil)
                    ((member-if (lambda (c) (opponent-adjacent-p team c battle)) candidates)
@@ -349,37 +409,51 @@
            (finding (list first-step path) minimizing cost)))))
 
 (defun actor-move! (actor battle)
+  "Move the actors in the current battle. See the rules of the puzzle for
+details."
   (with-slots (team position) actor
-    (unless (opponent-adjacent-p team position battle)
-      (let ((target (first (sort (nearest-targets actor battle) #'row-order<))))
-        (if target
-            (progn
-              ;; (draw-line position target :magenta 2)
-              (let ((first-step (first-step-to-target position target battle)))
-                (if first-step
-                    (progn
-                      (setf (cref (battle-map battle) position) nil)
-                      (setf position first-step)
-                      (setf (cref (battle-map battle) position) actor))))))))))
+    (if (opponent-adjacent-p team position battle)
+        (draw-actors battle)
+        (let ((target (first (sort (nearest-targets actor battle) #'row-order<))))
+          (if target
+              (progn
+                (draw-line position target :magenta 2)
+                (let ((first-step (first-step-to-target position target battle)))
+                  (if first-step
+                      (progn
+                        (draw-line position first-step :blue 4)
+                        (draw-actors battle)
+                        (setf (cref (battle-map battle) position) nil
+                              position first-step
+                              (cref (battle-map battle) position) actor)
+                        (draw-actors battle))))
+                (draw-actors battle)))))))
 
 (defun actor-combat! (actor battle)
+  "Calculate the attack in the current battle."
   (with-slots (team position attack) actor
     (let ((opponent (weakest-adjacent-opponent team position battle)))
       (when opponent
+        (draw-line position (entity-position opponent) :orange 4)
         (decf (actor-hp opponent) attack)
         (when (<= (actor-hp opponent) 0)
           (setf (cref (battle-map battle) (entity-position opponent)) nil))))))
 
 (defun advance-round! (battle round-count)
-  @ignore round-count ; used later
+  "Play one round in the current battle."
   (with-slots (actors map) battle
     (iter (for actor in actors)
           (when (<= (actor-hp actor) 0)
             (next-iteration))
+          (for actor-count from 0)
           (when (< (length (teams-present battle)) 2)
             (signal 'one-team-eliminated))
-          (actor-move! actor battle)
-          (actor-combat! actor battle))
+          (with-png-for-battle (battle (format nil "images/2018-15-~2,'0D-~2,'0D.png"
+                                               round-count actor-count))
+            (draw-walls battle)
+            (draw-cell (entity-position actor) :light-highlight)
+            (actor-move! actor battle)
+            (actor-combat! actor battle)))
     (setf actors (sort (living-actors battle) #'entity<))))
 
 (defun determine-outcome (input &optional (elf-attack *elf-power*))
@@ -402,7 +476,7 @@
       read-battle
       determine-outcome))
 
-;;; * Part 2
+;; * Part 2
 
 (defun aoc-15b (&optional (input #p"inputs/input15.txt"))
   "Returns the answer of the second part of day 15."
@@ -418,7 +492,7 @@
           (finding (values outcome attack rounds final-state)
                    such-that (= initial-elves final-elves)))))
 
-;;; * Tests
+;; * Tests
 (define-test test-15
   (assert-equal 27730 (determine-outcome *test-combat*)))
 

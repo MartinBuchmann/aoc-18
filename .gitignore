@@ -1,3 +1,5 @@
 /#package.lisp#
 /#README.org#
 /.DS_Store
+/*.png
+/images/*
