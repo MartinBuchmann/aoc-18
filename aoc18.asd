@@ -1,4 +1,4 @@
-;;;; project-euler.asd
+;;;; aoc18.asd
 (asdf:defsystem #:aoc18
   :description "My solutions to some Advent of Code 2018 puzzles."
   :author "Martin Buchmann"
@@ -25,4 +25,5 @@
                (:file "14")
                (:file "15")
                (:file "16")
-               (:file "17")))
+               (:file "17")
+               (:file "18")))
