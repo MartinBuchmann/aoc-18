@@ -5,7 +5,7 @@
   :license "Public Domain"
   :serial t
   :depends-on (#:lisp-unit #:cl-annot #:iterate #:anaphora #:alexandria #:cl-ppcre #:cl-arrows
-               #:cl-digraph #:cl-digraph.dot #:cl-containers #:dufy #:cl-cairo2)
+               #:cl-digraph #:cl-digraph.dot #:cl-containers)
   :components ((:file "package")
                (:file "aux-fns")
                (:file "clist")
@@ -24,4 +24,5 @@
                (:file "13")
                (:file "14")
                (:file "15")
-               (:file "16")))
+               (:file "16")
+               (:file "17")))
