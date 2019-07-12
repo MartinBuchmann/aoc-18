@@ -211,7 +211,7 @@
 ;; ** Parameters for visualisation
 
 (defparameter *visualize* nil "Only output the visualisation if set to T. Use
-with care as a lot of files will be created.")q
+with care as a lot of files will be created.")
 (defparameter *square-side* 32 "The size of a square of the map in pixel.")
 
 ;; ** The colors (taken from Phil)
@@ -245,7 +245,7 @@ with care as a lot of files will be created.")q
 (defparameter *color-green*   (multiple-value-list (dufy:lab-to-xyz 60 -20  65)))
 
 (defun color (keyword)
-  (symbol-value (find-symbol (format nil "*COLOR-~A*" keyword))))
+  (symbol-value (find-symbol (format nil "*COLOR-~A*" keyword) (find-package :aoc-18))))
 
 (defun set-color (keyword)
   (multiple-value-call #'cairo:set-source-rgb (apply #'dufy:xyz-to-rgb (color keyword))))
