@@ -17,7 +17,7 @@
   (:import-from :anaphora
    :awhen :aif :it)
   (:import-from :alexandria
-   :curry :read-file-into-string :with-gensyms)
+   :curry :read-file-into-string :with-gensyms :compose)
   (:import-from :cl-ppcre
    :split :register-groups-bind))
 

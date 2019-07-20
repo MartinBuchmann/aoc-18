@@ -76,7 +76,6 @@ upper left corner and an array of the formation."
                              :grid (make-array
                                     (list (- maxy miny)
                                           (- maxx minx -2))
-                                    :element-type 'keyword
                                     :initial-element :sand))))))
            (fill-scan (coord-list)
              (let ((scan (make-scan-from-coords coord-list)))
